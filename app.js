@@ -33,9 +33,9 @@ function lagrangeSecret(points, k) {
   return secret;
 }
 
-// Verify all shares
-function verifyShares(points, polyPoints, k) {
-  const bad = [];
+// Verify all shares and return wrong key IDs
+function findWrongKeys(points, polyPoints, k) {
+  const wrongKeys = [];
   const f = (x) => {
     let res = 0n;
     for (let i = 0; i < k; i++) {
@@ -58,10 +58,10 @@ function verifyShares(points, polyPoints, k) {
 
   for (const [x, y] of points) {
     if (f(x) !== y) {
-      bad.push([x, y]);
+      wrongKeys.push(x); // only push the key ID
     }
   }
-  return bad;
+  return wrongKeys;
 }
 
 // ---------- MAIN ----------
@@ -75,7 +75,7 @@ if (process.argv.length < 3) {
 const raw = fs.readFileSync(process.argv[2], "utf-8");
 const input = JSON.parse(raw);
 
-// Step 1: convert JSON -> (x,y) points
+// Convert JSON -> (x,y) points
 let points = [];
 for (const key in input) {
   if (key !== "keys") {
@@ -88,10 +88,10 @@ for (const key in input) {
 
 const k = input.keys.k;
 
-// Step 2: compute secret from first k points
+// Compute secret from first k points
 const secret = lagrangeSecret(points.slice(0, k), k);
-console.log("Secret (f(0)):", secret.toString());
+console.log("Decrypted Secret Key:", secret.toString());
 
-// Step 3: check for incorrect shares
-const badShares = verifyShares(points, points.slice(0, k), k);
-console.log("Incorrect shares:", badShares);
+// Find wrong points
+const wrongKeys = findWrongKeys(points, points.slice(0, k), k);
+console.log("Incorrect Key IDs:", wrongKeys);
